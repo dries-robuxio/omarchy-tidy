@@ -61,8 +61,8 @@ DEFAULTS = {
     "backend": "claude",
     "model": "",
     "prompt": DEFAULT_PROMPT,
-    "keys": "SUPER + CTRL + G",
-    "selection_keys": "SUPER + CTRL + SHIFT + G",
+    "keys": "SUPER + CTRL + Y",
+    "selection_keys": "SUPER + CTRL + SHIFT + Y",
     "notify": True,
     "timeout": 60,
     "openai": {"url": "http://localhost:11434/v1", "model": "", "api_key_env": "", "api_key_file": ""},
@@ -88,10 +88,23 @@ def load_config(path=None):
         return dict(DEFAULTS)
 
 
-def ensure_config():
-    if not CONFIG.exists() and EXAMPLE.exists():
-        CONFIG.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(EXAMPLE, CONFIG)
+def first_start_setup():
+    """No config yet: open the setup in a small Omarchy terminal (once per
+    login). Until it is saved Tidy binds no keys, so nothing is taken over
+    without the user choosing it."""
+    if CONFIG.exists() or not os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+        return
+    marker = RUNTIME / "tidy-setup-offered"
+    if marker.exists():
+        return
+    marker.touch()
+    me = shlex.quote(str(HERE / "tidy"))
+    launcher = shutil.which("omarchy-launch-floating-terminal-with-presentation")
+    if launcher:
+        subprocess.Popen([launcher, f"{me} setup"], start_new_session=True)
+    else:
+        subprocess.Popen(["setsid", "xdg-terminal-exec", "-e", "sh", "-c", f"{me} setup"],
+                         start_new_session=True)
 
 
 def config_mtime():
@@ -471,28 +484,76 @@ def hypr(code):
     subprocess.run(["hyprctl", "repl", code + '; return "ok"'], capture_output=True)
 
 
-def bind_keys(cfg, previous=None):
-    """(Re)register both keys. Unbinding first keeps one binding per key when
-    this runs again (worker restart, config change)."""
-    me = shlex.quote(str(HERE / "tidy"))
-    pairs = [(cfg.get("keys"), f"{me} run", "Tidy: clean the whole text field"),
-             (cfg.get("selection_keys"), f"{me} run --selection", "Tidy: clean the selected text")]
-    for keys in previous or []:
-        if keys:
-            hypr(f"hl.unbind({lua_str(keys)})")
+MOD_BITS = {"SHIFT": 1, "CAPS": 2, "CTRL": 4, "CONTROL": 4, "ALT": 8, "MOD2": 16, "MOD3": 32,
+            "SUPER": 64, "WIN": 64, "LOGO": 64, "MOD4": 64, "META": 64, "MOD5": 128}
+BIT_MODS = [(64, "SUPER"), (4, "CTRL"), (8, "ALT"), (1, "SHIFT"), (2, "CAPS"),
+            (16, "MOD2"), (32, "MOD3"), (128, "MOD5")]
+TAG = "Tidy: "
+
+
+def parse_keys(keys):
+    """"SUPER + CTRL + Y" -> (68, "y"); "CTRL + code:94" -> (4, "code:94")."""
+    parts = [p.strip() for p in str(keys).replace("+", " ").split() if p.strip()]
+    mask = 0
+    for mod in parts[:-1]:
+        mask |= MOD_BITS.get(mod.upper(), 0)
+    return mask, parts[-1].lower() if parts else ""
+
+
+def bind_id(bind):
+    key = f"code:{bind['keycode']}" if bind.get("keycode") else str(bind.get("key") or "")
+    return int(bind.get("modmask") or 0), key.lower()
+
+
+def keys_string(mask, key):
+    return " + ".join([name for bit, name in BIT_MODS if mask & bit] + [key])
+
+
+def current_binds():
+    if not os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+        return []
+    try:
+        return json.loads(subprocess.run(["hyprctl", "binds", "-j"], capture_output=True,
+                                         text=True).stdout or "[]")
+    except ValueError:
+        return []
+
+
+def bind_keys(cfg, binds=None):
+    """(Re)register Tidy's keys without touching anyone else's: first remove
+    Tidy's own earlier bindings (worker restart, changed config), then bind each
+    configured key unless something else already uses it. Returns the bound
+    keys and the skipped ones as (keys, description of the other binding)."""
+    binds = current_binds() if binds is None else binds
+    mine = [b for b in binds if str(b.get("description", "")).startswith(TAG)]
+    others = {bind_id(b): b for b in binds if not str(b.get("description", "")).startswith(TAG)}
     lua = []
-    for keys, cmd, desc in pairs:
-        if keys:
-            lua.append(f"hl.unbind({lua_str(keys)}); hl.bind({lua_str(keys)}, "
-                       f"hl.dsp.exec_cmd({lua_str(cmd)}), {{ description = {lua_str(desc)} }})")
+    for b in mine:
+        if bind_id(b) not in others:  # unbinding a key removes every binding on it
+            lua.append(f"hl.unbind({lua_str(keys_string(*bind_id(b)))})")
+    me = shlex.quote(str(HERE / "tidy"))
+    bound, skipped = [], []
+    for keys, cmd, desc in [(cfg.get("keys"), f"{me} run", TAG + "clean the whole text field"),
+                            (cfg.get("selection_keys"), f"{me} run --selection",
+                             TAG + "clean the selected text")]:
+        if not keys:
+            continue
+        other = others.get(parse_keys(keys))
+        if other is not None:
+            skipped.append((keys, str(other.get("description") or other.get("arg") or "another binding")))
+            continue
+        lua.append(f"hl.bind({lua_str(keys)}, hl.dsp.exec_cmd({lua_str(cmd)}), "
+                   f"{{ description = {lua_str(desc)} }})")
+        bound.append(keys)
     if lua:
         hypr("; ".join(lua))
-    return [k for k, _, _ in pairs if k]
+    return bound, skipped
 
 
 def unbind_keys(keys):
+    others = {bind_id(b) for b in current_binds() if not str(b.get("description", "")).startswith(TAG)}
     for k in keys:
-        if k:
+        if k and parse_keys(k) not in others:
             hypr(f"hl.unbind({lua_str(k)})")
 
 
@@ -523,6 +584,7 @@ class Worker:
         self.cfg = None
         self.backend = None
         self.keys = []
+        self.warned = set()
 
     def reload(self, force=False):
         mtime = config_mtime()
@@ -541,12 +603,31 @@ class Worker:
                 log(f"backend {cfg['backend']} ready")
             except Exception as e:
                 log(f"backend error: {e}")
-            self.keys = bind_keys(cfg, self.keys)
+            if CONFIG.exists():
+                self.keys, skipped = bind_keys(cfg)
+            else:  # keys only after the user chose them in `tidy setup`
+                self.keys, skipped = [], []
         log(f"keys: {', '.join(self.keys) or 'none'}")
+        self.warn_taken(skipped)
 
     def rebind(self):
+        if not CONFIG.exists():
+            return
         with self.lock:
-            self.keys = bind_keys(self.cfg, self.keys)
+            self.keys, skipped = bind_keys(self.cfg)
+        self.warn_taken(skipped)
+
+    def warn_taken(self, skipped):
+        """Never take over someone else's key: say which keys were left alone,
+        once per key and owner."""
+        for keys, owner in skipped:
+            if (keys, owner) in self.warned:
+                continue
+            self.warned.add((keys, owner))
+            log(f"{keys} is already used by {owner!r}; not binding it")
+            subprocess.run(["notify-send", "-a", "Tidy", "Tidy: key already in use",
+                            f"{keys} is already bound to \"{owner}\", so Tidy left it alone. "
+                            f"Pick other keys in {CONFIG}."])
 
     def clean(self, text):
         self.reload()
@@ -579,7 +660,7 @@ class Worker:
                 log(f"config error: {e}")
 
     def serve(self):
-        ensure_config()
+        first_start_setup()
         try:
             SOCK.unlink()
         except FileNotFoundError:
@@ -740,6 +821,198 @@ def cmd_status(_args):
     return 0
 
 
+# --- setup -------------------------------------------------------------------------
+
+KEY_CHOICES = [
+    ("Super + Ctrl + Y", "SUPER + CTRL + Y", "SUPER + CTRL + SHIFT + Y"),
+    ("Ctrl + <   (keyboards with a < > key next to left Shift: AZERTY, German, UK, ...)",
+     "CTRL + less", "CTRL + SHIFT + greater"),
+    ("Super + Ctrl + J", "SUPER + CTRL + J", "SUPER + CTRL + SHIFT + J"),
+]
+OTHER_KEY = "Something else (type it)"
+NO_KEY = "No key: I'll bind `tidy run` myself"
+
+BACKEND_INFO = {
+    "claude": "Claude Code: your Claude subscription, kept warm (~1 s)",
+    "codex": "Codex: your ChatGPT plan (~3-4 s)",
+    "opencode": "OpenCode: a provider you set up in OpenCode (slower start)",
+    "gemini": "Gemini CLI: your Google login (experimental)",
+    "kimi": "Kimi CLI (experimental)",
+    "ollama": "Ollama: a local model, free and private",
+    "openai": "An OpenAI-compatible API (OpenRouter, OpenAI, Groq, LM Studio, ...)",
+    "command": "My own command (edit the config afterwards)",
+}
+
+
+def ollama_models(url="http://localhost:11434"):
+    try:
+        with urllib.request.urlopen(url + "/api/tags", timeout=1) as r:
+            return [m["name"] for m in json.load(r).get("models", [])]
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+def detect_backends():
+    """Backends usable here, in the order the setup offers them."""
+    found = [b for b in ("claude", "codex", "opencode", "gemini", "kimi") if shutil.which(b)]
+    if ollama_models() is not None:
+        found.append("ollama")
+    return found + ["openai", "command"]
+
+
+def selection_keys_for(keys):
+    """The selection-only variant of a key: the same with Shift added."""
+    mask, _ = parse_keys(keys)
+    key = str(keys).replace("+", " ").split()[-1]  # as typed: keysyms are case-sensitive
+    return keys if mask & 1 else keys_string(mask | 1, key)
+
+
+def key_owner(keys, binds):
+    """Who else already uses these keys (None if free or Tidy's own)."""
+    for b in binds:
+        if bind_id(b) == parse_keys(keys) and not str(b.get("description", "")).startswith(TAG):
+            return str(b.get("description") or b.get("arg") or "another binding")
+    return None
+
+
+def render_config(answers, template=None):
+    """The example config with the setup's answers filled in; comments stay."""
+    text = template if template is not None else EXAMPLE.read_text()
+    section = ""
+    out = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            section = stripped[1:-1]
+        name = stripped.split("=", 1)[0].strip() if "=" in stripped and not stripped.startswith("#") else ""
+        value = answers.get(f"{section}.{name}" if section else name) if name else None
+        if value is not None:
+            line = f"{name} = {json.dumps(value)}"
+        out.append(line)
+    return "\n".join(out) + "\n"
+
+
+class Ui:
+    """gum when it is there (it is on Omarchy), plain prompts otherwise."""
+
+    def __init__(self):
+        self.gum = shutil.which("gum") if sys.stdin.isatty() else None
+
+    def say(self, text):
+        print(text)
+
+    def choose(self, header, options):
+        if self.gum:
+            r = subprocess.run([self.gum, "choose", "--header", header, *options],
+                               stdout=subprocess.PIPE, text=True)
+            if r.returncode != 0:
+                raise KeyboardInterrupt
+            return r.stdout.strip()
+        print(header)
+        for i, o in enumerate(options, 1):
+            print(f"  {i}) {o}")
+        while True:
+            pick = input("> ").strip()
+            if pick.isdigit() and 1 <= int(pick) <= len(options):
+                return options[int(pick) - 1]
+
+    def ask(self, header, placeholder="", value=""):
+        if self.gum:
+            r = subprocess.run([self.gum, "input", "--header", header, "--placeholder", placeholder,
+                                "--value", value], stdout=subprocess.PIPE, text=True)
+            if r.returncode != 0:
+                raise KeyboardInterrupt
+            return r.stdout.strip()
+        return input(f"{header} [{value or placeholder}] ").strip() or value
+
+    def confirm(self, question):
+        if self.gum:
+            return subprocess.run([self.gum, "confirm", question]).returncode == 0
+        return input(f"{question} [Y/n] ").strip().lower() in ("", "y", "yes")
+
+
+def setup_keys(ui, binds):
+    labels = [label for label, _, _ in KEY_CHOICES] + [OTHER_KEY, NO_KEY]
+    while True:
+        pick = ui.choose("Which key should tidy the text field you are typing in?\n"
+                         "(The same key with Shift tidies only the selected text.)", labels)
+        if pick == NO_KEY:
+            return "", ""
+        if pick == OTHER_KEY:
+            keys = ui.ask("Type the keys in Hyprland notation", "SUPER + ALT + J")
+            if not keys:
+                continue
+        else:
+            keys = next(k for label, k, _ in KEY_CHOICES if label == pick)
+        selection = next((s for label, _, s in KEY_CHOICES if label == pick), selection_keys_for(keys))
+        taken = [(k, o) for k in (keys, selection) if (o := key_owner(k, binds))]
+        if not taken:
+            return keys, selection
+        for k, owner in taken:
+            ui.say(f"  {k} is already used by \"{owner}\". Pick another.\n")
+
+
+def setup_backend(ui):
+    found = detect_backends()
+    labels = [BACKEND_INFO[b] for b in found]
+    pick = found[labels.index(ui.choose("Which AI should fix your text?", labels))]
+    answers = {"backend": pick, "model": ""}
+    if pick == "ollama":
+        models = ollama_models() or []
+        model = ui.choose("Which Ollama model? Small ones are fast.", models) if models else \
+            ui.ask("Ollama model (run `ollama pull llama3.2:3b` first)", "llama3.2:3b")
+        answers.update({"backend": "openai", "openai.url": "http://localhost:11434/v1", "openai.model": model})
+    elif pick == "openai":
+        answers["openai.url"] = ui.ask("API base URL", "https://openrouter.ai/api/v1",
+                                       "https://openrouter.ai/api/v1")
+        answers["openai.model"] = ui.ask("Model", "google/gemini-2.5-flash-lite")
+        key_file = ui.ask("File holding the API key (empty if none needed)", "~/.config/tidy/api-key")
+        answers["openai.api_key_file"] = key_file
+        if key_file and not Path(os.path.expanduser(key_file)).exists():
+            ui.say(f"  Put the key in {key_file} (chmod 600) before testing.")
+    elif pick == "opencode":
+        answers["model"] = ui.ask("OpenCode model as provider/model (its free default model only "
+                                  "works inside OpenCode)", "openrouter/z-ai/glm-5.3-flash")
+    return answers
+
+
+def cmd_setup(_args):
+    ui = Ui()
+    ui.say("Tidy fixes typos, spelling and grammar in whatever you are typing, with one key.\n")
+    try:
+        keys, selection = setup_keys(ui, current_binds())
+        answers = {"keys": keys, "selection_keys": selection}
+        while True:
+            answers.update(setup_backend(ui))
+            if answers["backend"] == "command":
+                break
+            cfg = merge(DEFAULTS, {k: v for k, v in answers.items() if "." not in k})
+            for k, v in answers.items():
+                if "." in k:
+                    section, name = k.split(".", 1)
+                    cfg[section] = dict(cfg[section], **{name: v})
+            sample = "teh docs are reddy, i sended them yesturday"
+            ui.say(f"Testing: {sample}")
+            started = time.monotonic()
+            try:
+                result = make_backend(cfg).clean(sample)
+                ui.say(f"   got: {result}   ({time.monotonic() - started:.1f} s)\n")
+                break
+            except Exception as e:
+                ui.say(f"   failed: {e}\n")
+                if ui.confirm("Keep this choice anyway?"):
+                    break
+    except (KeyboardInterrupt, EOFError):
+        ui.say("\nSetup cancelled, nothing saved.")
+        return 130
+    CONFIG.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG.write_text(render_config(answers))
+    ui.say(f"Saved {CONFIG}. Run `tidy setup` again any time, or edit that file.")
+    if keys:
+        ui.say(f"Now press {keys} in any text field, or {selection} for just the selection.")
+    return 0
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="tidy", description="Clean up the text you are writing, with one key.")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -751,11 +1024,12 @@ def main(argv=None):
                    help="start the backend from this config instead of using the running worker")
     sub.add_parser("serve", help="keep the backend warm and register the keys")
     sub.add_parser("status", help="show config and worker state")
+    sub.add_parser("setup", help="choose the keys and the AI (opens on first start)")
     args = p.parse_args(argv)
     if args.cmd == "serve":
         Worker().serve()
         return 0
-    return {"run": cmd_run, "text": cmd_text, "status": cmd_status}[args.cmd](args)
+    return {"run": cmd_run, "text": cmd_text, "status": cmd_status, "setup": cmd_setup}[args.cmd](args)
 
 
 if __name__ == "__main__":

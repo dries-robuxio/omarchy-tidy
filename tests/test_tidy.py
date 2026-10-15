@@ -31,7 +31,7 @@ class Config(unittest.TestCase):
         self.assertEqual(cfg["backend"], "openai")
         self.assertEqual(cfg["openai"]["model"], "x")
         self.assertEqual(cfg["openai"]["url"], "http://localhost:11434/v1")
-        self.assertEqual(cfg["keys"], "SUPER + CTRL + G")
+        self.assertEqual(cfg["keys"], "SUPER + CTRL + Y")
 
     def test_example_config_parses_and_matches_defaults(self):
         cfg = tidy.load_config(ROOT / "config.example.toml")
@@ -151,21 +151,44 @@ class Command(unittest.TestCase):
 
 
 class Keys(unittest.TestCase):
-    def test_bind_unbinds_first_and_quotes(self):
+    def bind(self, cfg, binds):
         calls = []
         with mock.patch.object(tidy, "hypr", calls.append):
-            keys = tidy.bind_keys(dict(tidy.DEFAULTS, keys='CTRL + less', selection_keys=""))
-        self.assertEqual(keys, ["CTRL + less"])
-        self.assertEqual(len(calls), 1)
-        self.assertIn('hl.unbind("CTRL + less"); hl.bind("CTRL + less", hl.dsp.exec_cmd(', calls[0])
-        self.assertIn(" run", calls[0])
-        self.assertNotIn("--selection", calls[0])
+            bound, skipped = tidy.bind_keys(dict(tidy.DEFAULTS, **cfg), binds)
+        return bound, skipped, " ".join(calls)
 
-    def test_changed_keys_unbind_old_ones(self):
-        calls = []
-        with mock.patch.object(tidy, "hypr", calls.append):
-            tidy.bind_keys(dict(tidy.DEFAULTS), previous=["CTRL + less"])
-        self.assertEqual(calls[0], 'hl.unbind("CTRL + less")')
+    def test_free_keys_are_bound(self):
+        bound, skipped, lua = self.bind({"keys": "CTRL + less", "selection_keys": ""}, [])
+        self.assertEqual((bound, skipped), (["CTRL + less"], []))
+        self.assertIn('hl.bind("CTRL + less", hl.dsp.exec_cmd(', lua)
+        self.assertIn(" run", lua)
+        self.assertNotIn("--selection", lua)
+        self.assertNotIn("unbind", lua)
+
+    def test_someone_elses_key_is_left_alone(self):
+        theirs = [{"modmask": 68, "key": "Y", "keycode": 0, "description": "My thing"}]
+        bound, skipped, lua = self.bind({}, theirs)
+        self.assertEqual(bound, ["SUPER + CTRL + SHIFT + Y"])
+        self.assertEqual(skipped, [("SUPER + CTRL + Y", "My thing")])
+        self.assertNotIn('"SUPER + CTRL + Y"', lua)
+
+    def test_own_old_bindings_are_replaced(self):
+        old = [{"modmask": 4, "key": "less", "keycode": 0, "description": "Tidy: clean the whole text field"}]
+        bound, _, lua = self.bind({}, old)
+        self.assertIn('hl.unbind("CTRL + less")', lua)
+        self.assertEqual(bound, ["SUPER + CTRL + Y", "SUPER + CTRL + SHIFT + Y"])
+
+    def test_own_binding_sharing_a_key_with_another_is_not_unbound(self):
+        binds = [{"modmask": 4, "key": "less", "keycode": 0, "description": "Tidy: x"},
+                 {"modmask": 4, "key": "less", "keycode": 0, "description": "Mine"}]
+        _, _, lua = self.bind({"keys": "", "selection_keys": ""}, binds)
+        self.assertNotIn("unbind", lua)
+
+    def test_parse_keys_and_back(self):
+        self.assertEqual(tidy.parse_keys("SUPER + CTRL + Y"), (68, "y"))
+        self.assertEqual(tidy.parse_keys("ctrl+code:94"), (4, "code:94"))
+        self.assertEqual(tidy.bind_id({"modmask": 4, "key": "", "keycode": 94}), (4, "code:94"))
+        self.assertEqual(tidy.keys_string(69, "g"), "SUPER + CTRL + SHIFT + g")
 
     def test_lua_string_escapes(self):
         self.assertEqual(tidy.lua_str('a "b" \\ c'), '"a \\"b\\" \\\\ c"')
@@ -222,6 +245,44 @@ class AgentCLIs(unittest.TestCase):
         self.assertIn("tools: []", agent)
         self.assertEqual(argv[argv.index("-p") + 1], tidy.wrap("x"))
         self.assertEqual(b.stdin("anything"), "")
+
+
+class Setup(unittest.TestCase):
+    def test_render_config_fills_answers_and_keeps_comments(self):
+        answers = {"backend": "openai", "keys": "CTRL + less", "selection_keys": "CTRL + SHIFT + greater",
+                   "model": "", "openai.url": "http://localhost:11434/v1", "openai.model": "llama3.2:3b"}
+        text = tidy.render_config(answers)
+        with tempfile.NamedTemporaryFile("w", suffix=".toml", delete=False) as f:
+            f.write(text)
+        try:
+            cfg = tidy.load_config(f.name)
+        finally:
+            os.unlink(f.name)
+        self.assertEqual(cfg["backend"], "openai")
+        self.assertEqual(cfg["keys"], "CTRL + less")
+        self.assertEqual(cfg["openai"]["model"], "llama3.2:3b")
+        self.assertEqual(cfg["model"], "")  # the top-level model, not [openai] model
+        self.assertIn("# Which AI cleans the text.", text)
+
+    def test_selection_keys_add_shift(self):
+        self.assertEqual(tidy.selection_keys_for("SUPER + ALT + J"), "SUPER + ALT + SHIFT + J")
+        self.assertEqual(tidy.selection_keys_for("CTRL + SHIFT + X"), "CTRL + SHIFT + X")
+
+    def test_key_owner(self):
+        binds = [{"modmask": 64, "key": "K", "keycode": 0, "description": "Keybindings"},
+                 {"modmask": 4, "key": "less", "keycode": 0, "description": "Tidy: x"}]
+        self.assertEqual(tidy.key_owner("SUPER + K", binds), "Keybindings")
+        self.assertIsNone(tidy.key_owner("CTRL + less", binds))  # Tidy's own
+        self.assertIsNone(tidy.key_owner("SUPER + CTRL + Y", binds))
+
+    def test_detect_backends_lists_installed_clis_then_apis(self):
+        with mock.patch.object(tidy.shutil, "which", lambda b: "/x" if b in ("codex", "claude") else None), \
+             mock.patch.object(tidy, "ollama_models", lambda: None):
+            self.assertEqual(tidy.detect_backends(), ["claude", "codex", "openai", "command"])
+
+    def test_preset_keys_have_info_and_backends_have_labels(self):
+        for b in ("claude", "codex", "opencode", "gemini", "kimi", "ollama", "openai", "command"):
+            self.assertIn(b, tidy.BACKEND_INFO)
 
 
 if __name__ == "__main__":

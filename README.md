@@ -12,7 +12,7 @@
 
 ---
 
-Type fast, don't fix anything, press **Super + Ctrl + G**, and a second later
+Type fast, don't fix anything, press **Super + Ctrl + Y**, and a second later
 the whole text field is replaced with a corrected version: typos, misspelled
 words, wrong words, doubled words, grammar, punctuation and capitals. Then
 press Enter.
@@ -40,36 +40,47 @@ The meeting is tomorrow, can you send me the docs before 3?
 omarchy plugin add https://github.com/dries-robuxio/omarchy-tidy.git --enable
 ```
 
-That's it: the keys work immediately, nothing to edit in your Hyprland config.
-By default Tidy uses **Claude Code** with your Claude subscription, so have
-[`claude`](https://docs.claude.com/en/docs/claude-code) installed and logged in
-(run `claude` once), or pick another backend below.
+A small setup window opens and asks two things:
+
+1. **Which key** you want (Super + Ctrl + Y, Ctrl + <, or any key you type). Keys
+   that something else already uses are refused, so Tidy never takes over one of
+   your shortcuts.
+2. **Which AI** fixes your text, from the ones it finds on your machine (Claude
+   Code, Codex, OpenCode, Gemini CLI, Kimi, Ollama) or an API you name.
+
+It then tries a sample sentence so you see it work, and saves your choices.
+Nothing is bound until you finish the setup, and nothing in your Hyprland config
+is edited. Run it again any time with
+`~/.config/omarchy/plugins/io.github.dries-robuxio.tidy/bin/tidy setup`.
 
 ## Use it
 
-| Key | What it does |
+| Key (default) | What it does |
 | --- | --- |
-| **Super + Ctrl + G** | Select all the text in the field you're typing in, tidy it, replace it |
-| **Super + Ctrl + Shift + G** | Tidy only the text you selected |
+| **Super + Ctrl + Y** | Select all the text in the field you're typing in, tidy it, replace it |
+| **Super + Ctrl + Shift + Y** | Tidy only the text you selected |
+
+Whatever key you choose, the same key with Shift tidies only the selection.
 
 A small notification says *Tidying…* while it works. If you switch to another
 window before it's done, Tidy doesn't paste into the wrong place: the result
 waits on your clipboard instead. In a terminal, Tidy works on the selection
 (Ctrl+A there means "start of line").
 
-On keyboards with a `< >` key next to left Shift (Belgian, German, UK, ...)
-`keys = "CTRL + less"` makes it a one-finger stretch: **Ctrl + <**.
+On keyboards with a `< >` key next to left Shift (AZERTY, German, UK, ...)
+**Ctrl + <** is a lovely choice: pick it in the setup.
 
 ## Configure
 
-The config lives in `~/.config/tidy/config.toml`, created on first start from
-[`config.example.toml`](config.example.toml). Changes apply within two seconds.
+The setup writes `~/.config/tidy/config.toml` (a commented copy of
+[`config.example.toml`](config.example.toml)). Edit it by hand for anything else;
+changes apply within two seconds.
 
 ```toml
 backend = "claude"         # claude | codex | opencode | gemini | kimi | openai | command
 model = ""                 # empty = a fast default for that backend
-keys = "SUPER + CTRL + G"
-selection_keys = "SUPER + CTRL + SHIFT + G"
+keys = "SUPER + CTRL + Y"
+selection_keys = "SUPER + CTRL + SHIFT + Y"
 notify = true
 # prompt = """Make the text formal. Output only the rewritten text."""
 ```
@@ -122,7 +133,8 @@ cmd = ["llm", "-m", "gpt-4o-mini", "-s", "Fix the grammar. Output only the text.
 - The plugin is a headless Omarchy **service**: `Service.qml` keeps `bin/tidy serve` running
   while the plugin is enabled.
 - The worker registers the two keys with Hyprland at runtime (and again after every Hyprland
-  config reload), keeps the backend warm, and answers key presses over a Unix socket in
+  config reload), only if no other binding uses them and only after the setup was saved; it
+  removes only its own bindings, keeps the backend warm, and answers key presses over a Unix socket in
   `$XDG_RUNTIME_DIR`. Claude Code is kept as one pre-started process; each request uses it
   once, so no earlier text stays in its context.
 - A key press sends Ctrl+A / Ctrl+C to the focused window through Hyprland (the way Omarchy's

@@ -21,8 +21,8 @@ model = ""
 # selection_keys: tidy only the selected text
 # On keyboards with a < > key next to left Shift (ISO, e.g. Belgian, German,
 # UK) "CTRL + less" and "CTRL + SHIFT + greater" are lovely.
-keys = "SUPER + CTRL + G"
-selection_keys = "SUPER + CTRL + SHIFT + G"
+keys = "SUPER + CTRL + Y"
+selection_keys = "SUPER + CTRL + SHIFT + Y"
 
 # Show "Tidying…" / "Tidied" notifications. Errors always show.
 notify = true
