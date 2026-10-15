@@ -30,7 +30,8 @@ notify = true
 # Seconds before giving up.
 timeout = 60
 
-# What the AI is asked to do. Change it to make Tidy translate, make text
+# What the AI is asked to do. By default: fix typos, misspellings and grammar
+# without rewriting. Change it to make Tidy translate, make text
 # formal, shorten it, ... The text itself is sent between <text></text> tags.
 # prompt = """
 # Rewrite the text in clear, friendly English. Output only the rewritten text.

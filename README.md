@@ -12,21 +12,22 @@
 
 ---
 
-Write a message the way you think (or dictate it), press **Super + Ctrl + G**,
-and a second later the whole text field is replaced with a clean version:
-spelling, grammar, punctuation, capitals, and the *uh*, *um* and repeated
-words that dictation leaves behind. Then press Enter.
+Type fast, don't fix anything, press **Super + Ctrl + G**, and a second later
+the whole text field is replaced with a corrected version: typos, misspelled
+words, wrong words, doubled words, grammar, punctuation and capitals. Then
+press Enter.
 
 ```
-uh so i think we should we should meet tomorow at like 3 oclock and then discus the the plan ok
+teh meeting is tomorow, can you send me the the docs bfeore 3?
 ```
 ```
-I think we should meet tomorrow at like 3 o'clock and then discuss the plan, ok?
+The meeting is tomorrow, can you send me the docs before 3?
 ```
 
 - **Works everywhere:** browsers, chat apps, editors, terminals. No app integration needed.
-- **Your words, fixed:** keeps your language (no translating), your tone, your line breaks and
-  lists. It does not rewrite, summarise or answer what you wrote.
+- **Your words, fixed:** keeps your language (no translating), your tone and slang ("lol",
+  "tmrw" stay), your line breaks and lists. It does not rewrite, summarise, make things
+  formal or answer what you wrote.
 - **Uses what you already pay for:** your Claude or ChatGPT subscription through their CLIs, a
   free local model with Ollama, or any API key you have.
 - **Fast:** the AI is kept warm in the background, so Claude Code answers in about a second.
