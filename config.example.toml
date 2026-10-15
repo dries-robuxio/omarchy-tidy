@@ -1,0 +1,57 @@
+# Tidy configuration: ~/.config/tidy/config.toml
+# Changes apply within two seconds; no restart needed.
+# Try your setup with:  tidy text "this is is a tset"   (bin/tidy in the plugin folder)
+
+# Which AI cleans the text. Each uses the login or key you already have.
+#   claude    Claude Code (your Claude subscription). Kept warm: ~1 s.
+#   codex     OpenAI Codex CLI (your ChatGPT plan or API key)
+#   opencode  OpenCode (whatever provider you set up there)
+#   gemini    Gemini CLI (your Google login)
+#   kimi      Kimi CLI
+#   openai    Any OpenAI-compatible API: Ollama, LM Studio, llama.cpp, OpenRouter,
+#             OpenAI, Groq, ... (see [openai] below). The fastest option.
+#   command   Your own program (see [command] below)
+backend = "claude"
+
+# Model for the backend. Empty picks a fast one (claude: haiku).
+model = ""
+
+# Keys, in Hyprland notation. Empty string = no key.
+# keys:           select all text in the focused field, tidy it, replace it
+# selection_keys: tidy only the selected text
+# On keyboards with a < > key next to left Shift (ISO, e.g. Belgian, German,
+# UK) "CTRL + less" and "CTRL + SHIFT + greater" are lovely.
+keys = "SUPER + CTRL + G"
+selection_keys = "SUPER + CTRL + SHIFT + G"
+
+# Show "Tidying…" / "Tidied" notifications. Errors always show.
+notify = true
+
+# Seconds before giving up.
+timeout = 60
+
+# What the AI is asked to do. Change it to make Tidy translate, make text
+# formal, shorten it, ... The text itself is sent between <text></text> tags.
+# prompt = """
+# Rewrite the text in clear, friendly English. Output only the rewritten text.
+# """
+
+[openai]
+# Base URL of an OpenAI-compatible API (".../v1"), and the model to use.
+#   Ollama:      http://localhost:11434/v1       model = "llama3.2:3b"
+#   OpenRouter:  https://openrouter.ai/api/v1     model = "google/gemini-2.5-flash-lite"
+#   OpenAI:      https://api.openai.com/v1        model = "gpt-5-nano"
+#   Anthropic:   https://api.anthropic.com/v1     model = "claude-haiku-5-5"
+url = "http://localhost:11434/v1"
+model = ""
+# The API key, if the service needs one: read from a file (recommended,
+# chmod 600) or from an environment variable of the desktop session.
+api_key_file = ""
+api_key_env = ""
+
+[command]
+# Your own cleaner. It gets the text on stdin and the prompt in $TIDY_PROMPT,
+# and prints the cleaned text. A list runs directly, a string runs with sh.
+# cmd = ["llm", "-m", "gpt-4o-mini", "-s", "Fix the grammar. Output only the text."]
+# cmd = 'my-cleaner --lang auto'
+cmd = []

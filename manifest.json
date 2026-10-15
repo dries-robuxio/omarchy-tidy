@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.dries-robuxio.tidy",
+  "name": "Tidy",
+  "version": "0.1.0",
+  "author": "Dries Van den Broecke",
+  "license": "MIT",
+  "description": "Clean up the text you are writing, in any app, with one key. Fixes spelling, grammar, punctuation and dictation slips in place, in your own language. Works with Claude Code, Codex, OpenCode, Gemini CLI, Kimi, any OpenAI-compatible API (Ollama, OpenRouter, ...) or your own command.",
+  "kinds": [
+    "service"
+  ],
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}
