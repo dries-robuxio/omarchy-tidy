@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "io.github.dries-robuxio.tidy",
   "name": "Tidy",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "author": "Dries Van den Broecke",
   "license": "MIT",
-  "description": "Clean up the text you are writing, in any app, with one key. Fixes typos, spelling, grammar and punctuation in place, in your own language, without rewriting. Works with Claude Code, Codex, OpenCode, Gemini CLI, any OpenAI-compatible API (Ollama, OpenRouter, Kimi, ...) or your own command.",
+  "description": "Type as fast and as messy as you like, then press one key: a second later the whole text field you are typing in is cleaned up, in place. No selecting, copying or pasting. Typos, bad spelling, grammar and punctuation are fixed in your own language and tone, nothing rewritten. To fix only part of a text (a Google Doc, an email), select it and add Shift. Any keys you like. Works with Claude Code, Codex, OpenCode, Gemini CLI, Ollama or any OpenAI-compatible API.",
   "kinds": [
     "service"
   ],

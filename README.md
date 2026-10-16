@@ -17,10 +17,10 @@
 
 ---
 
-Type fast, don't fix anything, press **Ctrl + `**, and a second later
-the whole text field is replaced with a corrected version: typos, misspelled
-words, wrong words, doubled words, grammar, punctuation and capitals. Then
-press Enter.
+Type as fast and as ugly as you like: typos, bad spelling, broken grammar,
+whatever comes out. Then press **Ctrl + `** in the field where your cursor is.
+No selecting, no copying, no pasting: Tidy selects the text itself, and less
+than a second later it is replaced with a clean version. Then press Enter.
 
 ```
 teh meeting is tomorow, can you send me the the docs bfeore 3?
@@ -28,6 +28,12 @@ teh meeting is tomorow, can you send me the the docs bfeore 3?
 ```
 The meeting is tomorrow, can you send me the docs before 3?
 ```
+
+Only want to fix part of a longer text, say a paragraph in a Google Doc or an
+email? Select it and press **Ctrl + Shift + `**: only the selection is cleaned.
+Both keys are yours to choose.
+
+> I'm a terrible typist. This is the shortcut I use most, all day long. (the author)
 
 - **Works everywhere:** browsers, chat apps, editors, terminals. No app integration needed.
 - **Your words, fixed:** keeps your language (no translating), your tone and slang ("lol",
