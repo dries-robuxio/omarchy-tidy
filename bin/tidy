@@ -375,7 +375,8 @@ class OpenCodeBackend(CommandBackend):
 
 class GeminiBackend(CommandBackend):
     """Gemini CLI (experimental: not tested by the author). A policy file denies
-    every tool, plan (read-only) approval mode, no MCP servers or extensions."""
+    every tool, plan (read-only) approval mode, no MCP servers or extensions,
+    and its container sandbox is off so the text stays on stdin."""
 
     name = "gemini"
 
@@ -390,6 +391,14 @@ class GeminiBackend(CommandBackend):
 
     def message(self, text):
         return wrap(text)
+
+    def env(self, tmp):
+        # With a Docker/Podman sandbox configured, Gemini relaunches itself in a
+        # container and moves stdin into that process's arguments, where other
+        # local users could read it. GEMINI_SANDBOX overrides settings and flags.
+        env = clean_env()
+        env["GEMINI_SANDBOX"] = "false"
+        return env
 
 
 class OpenAIBackend(Backend):

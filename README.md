@@ -114,7 +114,7 @@ Try a setup without touching a text field:
 | `claude` | [Claude Code](https://docs.claude.com/en/docs/claude-code), your Claude subscription | `haiku` | **~1 s** (kept warm) | all off |
 | `codex` | [Codex CLI](https://github.com/openai/codex), your ChatGPT plan | `gpt-6-luna` | ~3–4 s | shell and apps off, read-only sandbox |
 | `opencode` | [OpenCode](https://opencode.ai), any provider you set up there | set `model`, e.g. `openrouter/z-ai/glm-5.3-flash` | 5–13 s (slow start) | all denied |
-| `gemini` | [Gemini CLI](https://github.com/google-gemini/gemini-cli), your Google login | `gemini-2.5-flash-lite` | *experimental, untested* | denied by policy |
+| `gemini` | [Gemini CLI](https://github.com/google-gemini/gemini-cli), your Google login | `gemini-2.5-flash-lite` | *experimental, untested* | denied by policy; container sandbox off |
 | `openai` | any OpenAI-compatible API | set it | fastest: one HTTP call | none |
 | `command` | your own program | — | — | up to you |
 

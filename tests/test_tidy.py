@@ -252,6 +252,11 @@ class AgentCLIs(unittest.TestCase):
         self.assertIn('decision = "deny"', policy)
         self.assertEqual(argv[argv.index("--approval-mode") + 1], "plan")
 
+    def test_gemini_container_sandbox_is_off(self):
+        # Its sandbox relaunch copies stdin into process arguments.
+        with mock.patch.dict(os.environ, {"GEMINI_SANDBOX": "docker"}):
+            self.assertEqual(self.backend("gemini").env("/tmp")["GEMINI_SANDBOX"], "false")
+
     def test_text_never_goes_on_the_command_line(self):
         # Process arguments are readable by every local user (ps, /proc/PID/cmdline);
         # the text must only travel on stdin.

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.dries-robuxio.tidy",
   "name": "Tidy",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "author": "Dries Van den Broecke",
   "license": "MIT",
   "description": "Type as fast and as messy as you like, then press one key: a second later the whole text field you are typing in is cleaned up, in place. No selecting, copying or pasting. Typos, bad spelling, grammar and punctuation are fixed in your own language and tone, nothing rewritten. To fix only part of a text (a Google Doc, an email), select it and add Shift. Any keys you like. Works with Claude Code, Codex, OpenCode, Gemini CLI, Ollama or any OpenAI-compatible API.",
