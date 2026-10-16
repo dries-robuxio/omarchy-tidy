@@ -252,15 +252,24 @@ class AgentCLIs(unittest.TestCase):
         self.assertIn('decision = "deny"', policy)
         self.assertEqual(argv[argv.index("--approval-mode") + 1], "plan")
 
-    def test_kimi_agent_file_has_no_tools(self):
-        b = self.backend("kimi")
-        with tempfile.TemporaryDirectory() as tmp:
-            b.prepare(tmp)
-            argv = b.argv(b.message("x"), tmp)
-            agent = Path(argv[argv.index("--agent-file") + 1]).read_text()
-        self.assertIn("tools: []", agent)
-        self.assertEqual(argv[argv.index("-p") + 1], tidy.wrap("x"))
-        self.assertEqual(b.stdin("anything"), "")
+    def test_text_never_goes_on_the_command_line(self):
+        # Process arguments are readable by every local user (ps, /proc/PID/cmdline);
+        # the text must only travel on stdin.
+        secret = "my private message 4f9c"
+        for name, cls in tidy.BACKENDS.items():
+            if not issubclass(cls, tidy.CommandBackend):
+                continue
+            b = self.backend(name, **({"command": {"cmd": ["cat"]}} if name == "command" else {}))
+            with tempfile.TemporaryDirectory() as tmp:
+                b.prepare(tmp)
+                message = b.message(secret)
+                argv = b.argv(message, tmp)
+                self.assertFalse(any(secret in a for a in argv), name)
+                self.assertIn(secret, b.stdin(message), name)
+
+    def test_kimi_backend_was_removed_with_a_hint(self):
+        with self.assertRaisesRegex(RuntimeError, "api.moonshot.ai"):
+            tidy.make_backend(dict(tidy.DEFAULTS, backend="kimi"))
 
 
 class Setup(unittest.TestCase):
@@ -297,7 +306,7 @@ class Setup(unittest.TestCase):
             self.assertEqual(tidy.detect_backends(), ["claude", "codex", "openai", "command"])
 
     def test_preset_keys_have_info_and_backends_have_labels(self):
-        for b in ("claude", "codex", "opencode", "gemini", "kimi", "ollama", "openai", "command"):
+        for b in ("claude", "codex", "opencode", "gemini", "ollama", "openai", "command"):
             self.assertIn(b, tidy.BACKEND_INFO)
 
 

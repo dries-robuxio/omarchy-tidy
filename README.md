@@ -7,7 +7,7 @@
 <p align="center">
   <b>Clean up the text you are writing, in any app, with one key.</b><br>
   An <a href="https://omarchy.org">Omarchy</a> plugin. Bring your own AI: Claude Code, Codex, OpenCode,<br>
-  Gemini CLI, Kimi, Ollama, OpenRouter, any OpenAI-compatible API, or your own command.
+  Gemini CLI, Ollama, OpenRouter, Kimi, any OpenAI-compatible API, or your own command.
 </p>
 
 <p align="center">
@@ -51,7 +51,7 @@ A small setup window opens and asks two things:
    that something else already uses are refused, so Tidy never takes over one of
    your shortcuts.
 2. **Which AI** fixes your text, from the ones it finds on your machine (Claude
-   Code, Codex, OpenCode, Gemini CLI, Kimi, Ollama) or an API you name.
+   Code, Codex, OpenCode, Gemini CLI, Ollama) or an API you name.
 
 It then tries a sample sentence so you see it work, and saves your choices.
 Nothing is bound until you finish the setup, and nothing in your Hyprland config
@@ -86,7 +86,7 @@ The setup writes `~/.config/tidy/config.toml` (a commented copy of
 changes apply within two seconds.
 
 ```toml
-backend = "claude"         # claude | codex | opencode | gemini | kimi | openai | command
+backend = "claude"         # claude | codex | opencode | gemini | openai | command
 model = ""                 # empty = a fast default for that backend
 keys = "CTRL + code:49"     # Ctrl + the key left of 1
 selection_keys = "CTRL + SHIFT + code:49"
@@ -109,11 +109,13 @@ Try a setup without touching a text field:
 | `codex` | [Codex CLI](https://github.com/openai/codex), your ChatGPT plan | `gpt-6-luna` | ~3–4 s | shell and apps off, read-only sandbox |
 | `opencode` | [OpenCode](https://opencode.ai), any provider you set up there | set `model`, e.g. `openrouter/z-ai/glm-5.3-flash` | 5–13 s (slow start) | all denied |
 | `gemini` | [Gemini CLI](https://github.com/google-gemini/gemini-cli), your Google login | `gemini-2.5-flash-lite` | *experimental, untested* | denied by policy |
-| `kimi` | [Kimi CLI](https://github.com/MoonshotAI/kimi-cli) | Kimi's default | *experimental, untested* | none given; loads AGENTS.md and saves sessions |
 | `openai` | any OpenAI-compatible API | set it | fastest: one HTTP call | none |
 | `command` | your own program | — | — | up to you |
 
 Agent CLIs carry their own startup time; only `claude` is kept warm so far.
+For **Kimi**, use `backend = "openai"` with `url = "https://api.moonshot.ai/v1"` and a
+Moonshot API key: Kimi's CLI only takes a prompt as a command-line argument, where
+other users on the machine could read your text, so Tidy does not drive it.
 OpenCode's free built-in model refuses requests from other programs, so set a
 `model` from a provider you configured in OpenCode.
 
@@ -123,7 +125,7 @@ works with local models:
 ```toml
 backend = "openai"
 [openai]
-url = "http://localhost:11434/v1"   # Ollama; or OpenRouter, OpenAI, Groq, LM Studio, ...
+url = "http://localhost:11434/v1"   # Ollama; or OpenRouter, OpenAI, Groq, LM Studio, Kimi, ...
 model = "llama3.2:3b"
 api_key_file = ""                   # e.g. "~/.config/tidy/key" (chmod 600) if the API needs a key
 ```
@@ -150,6 +152,8 @@ cmd = ["llm", "-m", "gpt-4o-mini", "-s", "Fix the grammar. Output only the text.
   universal copy does), cleans the text and pastes it back with Ctrl+V.
 - The text is sent between `<text>` tags with an instruction not to follow anything inside
   it, so a message that says "ignore your instructions" just gets its spelling fixed.
+- Your text reaches agent CLIs only on stdin, never as a command-line argument (those are
+  readable by every user on the machine through `ps`).
 - Agent CLIs run with their tools switched off where the CLI allows it, in an empty temporary
   directory, without your project files or MCP servers.
 

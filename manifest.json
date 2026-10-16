@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "io.github.dries-robuxio.tidy",
   "name": "Tidy",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": "Dries Van den Broecke",
   "license": "MIT",
-  "description": "Clean up the text you are writing, in any app, with one key. Fixes typos, spelling, grammar and punctuation in place, in your own language, without rewriting. Works with Claude Code, Codex, OpenCode, Gemini CLI, Kimi, any OpenAI-compatible API (Ollama, OpenRouter, ...) or your own command.",
+  "description": "Clean up the text you are writing, in any app, with one key. Fixes typos, spelling, grammar and punctuation in place, in your own language, without rewriting. Works with Claude Code, Codex, OpenCode, Gemini CLI, any OpenAI-compatible API (Ollama, OpenRouter, Kimi, ...) or your own command.",
   "kinds": [
     "service"
   ],

@@ -392,30 +392,6 @@ class GeminiBackend(CommandBackend):
         return wrap(text)
 
 
-class KimiBackend(CommandBackend):
-    """Kimi CLI (experimental: not tested by the author). An agent file with no
-    tools; note Kimi always loads AGENTS.md files and saves its sessions."""
-
-    name = "kimi"
-
-    def prepare(self, tmp):
-        with open(os.path.join(tmp, "tidy.md"), "w") as f:
-            f.write("---\nname: tidy\ndescription: Tidy text cleaner\ntools: []\n---\n"
-                    + instruction(self.cfg) + "\n")
-
-    def argv(self, message, tmp):
-        argv = ["kimi", "-p", message, "--agent-file", os.path.join(tmp, "tidy.md")]
-        if self.model():
-            argv += ["-m", self.model()]
-        return argv
-
-    def stdin(self, message):
-        return ""
-
-    def message(self, text):
-        return wrap(text)
-
-
 class OpenAIBackend(Backend):
     """Any OpenAI-compatible chat completions endpoint: Ollama, LM Studio,
     llama.cpp server, OpenRouter, OpenAI, Groq, Anthropic's compatibility API."""
@@ -459,7 +435,6 @@ BACKENDS = {
     "codex": CodexBackend,
     "opencode": OpenCodeBackend,
     "gemini": GeminiBackend,
-    "kimi": KimiBackend,
     "openai": OpenAIBackend,
     "command": ShellCommandBackend,
 }
@@ -467,6 +442,10 @@ BACKENDS = {
 
 def make_backend(cfg):
     name = str(cfg.get("backend") or "claude")
+    if name == "kimi":
+        raise RuntimeError("the kimi backend was removed: Kimi's CLI only takes the text as a "
+                           "command-line argument, which other users can read. Use backend = "
+                           "\"openai\" with url = \"https://api.moonshot.ai/v1\" instead")
     if name not in BACKENDS:
         raise RuntimeError(f"unknown backend {name!r}; pick one of {', '.join(BACKENDS)}")
     return BACKENDS[name](cfg)
@@ -863,7 +842,6 @@ BACKEND_INFO = {
     "codex": "Codex: your ChatGPT plan (~3-4 s)",
     "opencode": "OpenCode: a provider you set up in OpenCode (slower start)",
     "gemini": "Gemini CLI: your Google login (experimental)",
-    "kimi": "Kimi CLI (experimental)",
     "ollama": "Ollama: a local model, free and private",
     "openai": "An OpenAI-compatible API (OpenRouter, OpenAI, Groq, LM Studio, ...)",
     "command": "My own command (edit the config afterwards)",
@@ -880,7 +858,7 @@ def ollama_models(url="http://localhost:11434"):
 
 def detect_backends():
     """Backends usable here, in the order the setup offers them."""
-    found = [b for b in ("claude", "codex", "opencode", "gemini", "kimi") if shutil.which(b)]
+    found = [b for b in ("claude", "codex", "opencode", "gemini") if shutil.which(b)]
     if ollama_models() is not None:
         found.append("ollama")
     return found + ["openai", "command"]

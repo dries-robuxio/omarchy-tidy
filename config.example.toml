@@ -7,9 +7,9 @@
 #   codex     OpenAI Codex CLI (your ChatGPT plan or API key)
 #   opencode  OpenCode (whatever provider you set up there)
 #   gemini    Gemini CLI (your Google login)
-#   kimi      Kimi CLI
 #   openai    Any OpenAI-compatible API: Ollama, LM Studio, llama.cpp, OpenRouter,
-#             OpenAI, Groq, ... (see [openai] below). The fastest option.
+#             OpenAI, Groq, Kimi (https://api.moonshot.ai/v1), ...
+#             (see [openai] below). The fastest option.
 #   command   Your own program (see [command] below)
 backend = "claude"
 
