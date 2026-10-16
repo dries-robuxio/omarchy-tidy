@@ -1,32 +1,34 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
   <rect width="1600" height="900" fill="#101118"/>
-
-  <!-- logo + name -->
   <g transform="translate(120 110)">
     <rect width="112" height="112" rx="26" fill="#1c1d27"/>
-    <path d="M24 56 q 8 -14 16 0 t 16 0 L 88 56" transform="translate(0 0)"
-          fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M24 56 q 8 -14 16 0 t 16 0 L 88 56" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
     <text x="144" y="74" font-family="JetBrainsMono Nerd Font, JetBrains Mono, monospace" font-size="56" font-weight="700" fill="#ffffff">Tidy</text>
   </g>
   <text x="1480" y="182" text-anchor="end" font-family="JetBrainsMono Nerd Font, JetBrains Mono, monospace" font-size="30" fill="#8a8fa6">fix what you typed, in any app, with one key</text>
-
-  <!-- before -->
   <g font-family="JetBrainsMono Nerd Font, JetBrains Mono, monospace">
     <rect x="120" y="290" width="1360" height="160" rx="18" fill="#191a23" stroke="#2a2c3a"/>
-    <text x="160" y="345" font-size="26" fill="#6b7086">before</text>
-    <text x="160" y="405" font-size="33" fill="#c9cbd6">teh meeting is tomorow, can you send me the the docs bfeore 3?</text>
+    <text x="160" y="345" font-size="26" fill="#6b7086">you type</text>
+    <text x="160" y="405" font-size="33" fill="#c9cbd6" xml:space="preserve">teh meeting is tomorow, can you send me the the docs bfeore 3?</text>
+<path d="M162.0 422 L168.0 419 L174.0 425 L180.0 419 L186.0 425 L192.0 419 L198.0 425 L204.0 419 L210.0 425 L216.0 419 L217.4 425" fill="none" stroke="#ff7a85" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+<path d="M459.0 422 L465.0 419 L471.0 425 L477.0 419 L483.0 425 L489.0 419 L495.0 425 L501.0 419 L507.0 425 L513.0 419 L519.0 425 L525.0 419 L531.0 425 L537.0 419 L543.0 425 L549.0 419 L555.0 425 L561.0 419 L567.0 425 L573.0 419 L579.0 425 L585.0 419 L591.0 425 L593.6 419" fill="none" stroke="#ff7a85" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+<path d="M1033.2 422 L1039.2 419 L1045.2 425 L1051.2 419 L1057.2 425 L1063.2 419 L1069.2 425 L1075.2 419 L1081.2 425 L1087.2 419 L1088.6 425" fill="none" stroke="#ff7a85" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+<path d="M1211.4 422 L1217.4 419 L1223.4 425 L1229.4 419 L1235.4 425 L1241.4 419 L1247.4 425 L1253.4 419 L1259.4 425 L1265.4 419 L1271.4 425 L1277.4 419 L1283.4 425 L1289.4 419 L1295.4 425 L1301.4 419 L1307.4 425 L1313.4 419 L1319.4 425 L1325.4 419 L1326.2 425" fill="none" stroke="#ff7a85" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
 
-    <!-- key -->
-    <g transform="translate(800 505)">
-      <rect x="-150" y="-34" width="300" height="68" rx="14" fill="#1c1d27" stroke="#3a3d52"/>
-      <text x="0" y="12" text-anchor="middle" font-size="32" font-weight="700" fill="#ffffff">Ctrl + `</text>
+    <!-- keycaps -->
+    <g transform="translate(0 474)">
+      <rect x="688" y="4" width="124" height="84" rx="16" fill="#25263a" opacity="0.9"/>
+      <rect x="688" y="0" width="124" height="84" rx="16" fill="#1c1d27" stroke="#3a3d52"/>
+      <text x="750" y="52" text-anchor="middle" font-size="28" fill="#ffffff">Ctrl</text>
+      <rect x="830" y="4" width="84" height="84" rx="16" fill="#25263a" opacity="0.9"/>
+      <rect x="830" y="0" width="84" height="84" rx="16" fill="#1c1d27" stroke="#3a3d52"/>
+      <text x="872" y="33" text-anchor="middle" font-size="26" font-weight="700" fill="#ffffff">~</text>
+      <text x="872" y="100" text-anchor="middle" font-size="56" font-weight="700" fill="#ffffff">`</text>
+      <text x="946" y="54" font-size="26" fill="#6b7086">→ ~1 s</text>
     </g>
-
-    <!-- after -->
-    <rect x="120" y="580" width="1360" height="160" rx="18" fill="#191a23" stroke="#7ee0c3" stroke-opacity="0.55"/>
-    <text x="160" y="635" font-size="26" fill="#7ee0c3">after, ~1 second</text>
-    <text x="160" y="695" font-size="33" fill="#ffffff">The meeting is tomorrow, can you send me the docs before 3?</text>
-
-    <text x="800" y="830" text-anchor="middle" font-size="28" fill="#6b7086">Claude Code · Codex · OpenCode · Gemini CLI · Ollama · any OpenAI-compatible API</text>
+    <rect x="120" y="600" width="1360" height="160" rx="18" fill="#191a23" stroke="#7ee0c3" stroke-opacity="0.55"/>
+    <text x="160" y="655" font-size="26" fill="#7ee0c3">tidied, in place</text>
+    <text x="160" y="715" font-size="33" fill="#ffffff" xml:space="preserve"><tspan fill="#7ee0c3">The</tspan> meeting is <tspan fill="#7ee0c3">tomorrow</tspan>, can you send me the docs <tspan fill="#7ee0c3">before</tspan> 3?</text>
+    <text x="800" y="838" text-anchor="middle" font-size="26" fill="#6b7086">Claude Code · Codex · OpenCode · Gemini CLI · Ollama · any OpenAI-compatible API</text>
   </g>
 </svg>

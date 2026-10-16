@@ -10,6 +10,11 @@
   Gemini CLI, Kimi, Ollama, OpenRouter, any OpenAI-compatible API, or your own command.
 </p>
 
+<p align="center">
+  <img src="assets/demo.gif" alt="Typing a message with typos, pressing Ctrl + `, and the text is corrected a second later" width="800"><br>
+  <sub><a href="assets/demo.mp4">Watch with sound</a></sub>
+</p>
+
 ---
 
 Type fast, don't fix anything, press **Ctrl + `**, and a second later
