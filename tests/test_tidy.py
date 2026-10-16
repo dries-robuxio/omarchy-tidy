@@ -31,7 +31,7 @@ class Config(unittest.TestCase):
         self.assertEqual(cfg["backend"], "openai")
         self.assertEqual(cfg["openai"]["model"], "x")
         self.assertEqual(cfg["openai"]["url"], "http://localhost:11434/v1")
-        self.assertEqual(cfg["keys"], "SUPER + CTRL + Y")
+        self.assertEqual(cfg["keys"], "CTRL + code:49")
 
     def test_example_config_parses_and_matches_defaults(self):
         cfg = tidy.load_config(ROOT / "config.example.toml")
@@ -167,7 +167,8 @@ class Keys(unittest.TestCase):
 
     def test_someone_elses_key_is_left_alone(self):
         theirs = [{"modmask": 68, "key": "Y", "keycode": 0, "description": "My thing"}]
-        bound, skipped, lua = self.bind({}, theirs)
+        bound, skipped, lua = self.bind({"keys": "SUPER + CTRL + Y",
+                                         "selection_keys": "SUPER + CTRL + SHIFT + Y"}, theirs)
         self.assertEqual(bound, ["SUPER + CTRL + SHIFT + Y"])
         self.assertEqual(skipped, [("SUPER + CTRL + Y", "My thing")])
         self.assertNotIn('"SUPER + CTRL + Y"', lua)
@@ -176,13 +177,28 @@ class Keys(unittest.TestCase):
         old = [{"modmask": 4, "key": "less", "keycode": 0, "description": "Tidy: clean the whole text field"}]
         bound, _, lua = self.bind({}, old)
         self.assertIn('hl.unbind("CTRL + less")', lua)
-        self.assertEqual(bound, ["SUPER + CTRL + Y", "SUPER + CTRL + SHIFT + Y"])
+        self.assertEqual(bound, ["CTRL + code:49", "CTRL + SHIFT + code:49"])
 
     def test_own_binding_sharing_a_key_with_another_is_not_unbound(self):
         binds = [{"modmask": 4, "key": "less", "keycode": 0, "description": "Tidy: x"},
                  {"modmask": 4, "key": "less", "keycode": 0, "description": "Mine"}]
         _, _, lua = self.bind({"keys": "", "selection_keys": ""}, binds)
         self.assertNotIn("unbind", lua)
+
+    def test_default_key_is_the_key_left_of_1(self):
+        binds = [{"modmask": 4, "key": "", "keycode": 49, "description": "VS Code? no, a Hyprland bind"}]
+        self.assertEqual(tidy.parse_keys(tidy.DEFAULTS["keys"]), (4, "code:49"))
+        self.assertIsNotNone(tidy.key_owner(tidy.DEFAULTS["keys"], binds))
+
+    def test_parse_binds_keeps_key_codes(self):
+        text = ("bindd\n\tmodmask: 72\n\tsubmap: \n\tkey: SUPER + ALT + code:35\n\tkeycode: 0\n"
+                "\tdescription: Webcam larger\n\tdispatcher: __lua\n\targ: 154\n\n"
+                "bindd\n\tmodmask: 4\n\tsubmap: \n\tkey: less\n\tkeycode: 0\n"
+                "\tdescription: Tidy: clean the whole text field\n\tdispatcher: __lua\n\targ: 9\n")
+        binds = tidy.parse_binds(text)
+        self.assertEqual(tidy.bind_id(binds[0]), (72, "code:35"))
+        self.assertEqual(tidy.bind_id(binds[1]), (4, "less"))
+        self.assertEqual(tidy.key_owner("SUPER + ALT + code:35", binds), "Webcam larger")
 
     def test_parse_keys_and_back(self):
         self.assertEqual(tidy.parse_keys("SUPER + CTRL + Y"), (68, "y"))

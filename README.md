@@ -12,7 +12,7 @@
 
 ---
 
-Type fast, don't fix anything, press **Super + Ctrl + Y**, and a second later
+Type fast, don't fix anything, press **Ctrl + `**, and a second later
 the whole text field is replaced with a corrected version: typos, misspelled
 words, wrong words, doubled words, grammar, punctuation and capitals. Then
 press Enter.
@@ -42,7 +42,7 @@ omarchy plugin add https://github.com/dries-robuxio/omarchy-tidy.git --enable
 
 A small setup window opens and asks two things:
 
-1. **Which key** you want (Super + Ctrl + Y, Ctrl + <, or any key you type). Keys
+1. **Which key** you want (Ctrl + `, Ctrl + <, Super + Ctrl + Y, or any key you type). Keys
    that something else already uses are refused, so Tidy never takes over one of
    your shortcuts.
 2. **Which AI** fixes your text, from the ones it finds on your machine (Claude
@@ -57,8 +57,8 @@ is edited. Run it again any time with
 
 | Key (default) | What it does |
 | --- | --- |
-| **Super + Ctrl + Y** | Select all the text in the field you're typing in, tidy it, replace it |
-| **Super + Ctrl + Shift + Y** | Tidy only the text you selected |
+| **Ctrl + `** | Select all the text in the field you're typing in, tidy it, replace it |
+| **Ctrl + Shift + `** | Tidy only the text you selected |
 
 Whatever key you choose, the same key with Shift tidies only the selection.
 
@@ -67,8 +67,12 @@ window before it's done, Tidy doesn't paste into the wrong place: the result
 waits on your clipboard instead. In a terminal, Tidy works on the selection
 (Ctrl+A there means "start of line").
 
+**Ctrl + `** is one-handed on purpose: left little finger on Ctrl, ring finger
+on the key left of 1. Tidy binds that key by position, so on AZERTY it is
+Ctrl + ², on German Ctrl + ^, the same spot. (It takes over VS Code's Ctrl + `
+terminal toggle while Tidy runs; pick another key in the setup if you need it.)
 On keyboards with a `< >` key next to left Shift (AZERTY, German, UK, ...)
-**Ctrl + <** is a lovely choice: pick it in the setup.
+**Ctrl + <** is just as quick.
 
 ## Configure
 
@@ -79,8 +83,8 @@ changes apply within two seconds.
 ```toml
 backend = "claude"         # claude | codex | opencode | gemini | kimi | openai | command
 model = ""                 # empty = a fast default for that backend
-keys = "SUPER + CTRL + Y"
-selection_keys = "SUPER + CTRL + SHIFT + Y"
+keys = "CTRL + code:49"     # Ctrl + the key left of 1
+selection_keys = "CTRL + SHIFT + code:49"
 notify = true
 # prompt = """Make the text formal. Output only the rewritten text."""
 ```

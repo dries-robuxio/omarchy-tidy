@@ -61,8 +61,8 @@ DEFAULTS = {
     "backend": "claude",
     "model": "",
     "prompt": DEFAULT_PROMPT,
-    "keys": "SUPER + CTRL + Y",
-    "selection_keys": "SUPER + CTRL + SHIFT + Y",
+    "keys": "CTRL + code:49",
+    "selection_keys": "CTRL + SHIFT + code:49",
     "notify": True,
     "timeout": 60,
     "openai": {"url": "http://localhost:11434/v1", "model": "", "api_key_env": "", "api_key_file": ""},
@@ -509,14 +509,39 @@ def keys_string(mask, key):
     return " + ".join([name for bit, name in BIT_MODS if mask & bit] + [key])
 
 
+def parse_binds(text):
+    """`hyprctl binds` as a list of {modmask, key, keycode, description}. The
+    text form, not -j: the JSON form loses the key code of code:N bindings
+    (it reports key "" and keycode 0), the text form keeps "... + code:N"."""
+    binds, cur = [], None
+    for line in text.splitlines():
+        if line and not line[0].isspace():
+            cur = {}
+            binds.append(cur)
+            continue
+        if cur is None or ":" not in line:
+            continue
+        name, _, value = line.strip().partition(":")
+        value = value.strip()
+        if name == "modmask":
+            cur["modmask"] = int(value or 0)
+        elif name == "key":
+            last = value.replace("+", " ").split()[-1] if value.strip() else ""
+            if last.startswith("code:") and last[5:].isdigit():
+                cur["key"], cur["keycode"] = "", int(last[5:])
+            else:
+                cur["key"] = last
+        elif name == "description":
+            cur["description"] = value
+        elif name == "arg":
+            cur["arg"] = value
+    return [b for b in binds if "modmask" in b]
+
+
 def current_binds():
     if not os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
         return []
-    try:
-        return json.loads(subprocess.run(["hyprctl", "binds", "-j"], capture_output=True,
-                                         text=True).stdout or "[]")
-    except ValueError:
-        return []
+    return parse_binds(subprocess.run(["hyprctl", "binds"], capture_output=True, text=True).stdout)
 
 
 def bind_keys(cfg, binds=None):
@@ -824,10 +849,11 @@ def cmd_status(_args):
 # --- setup -------------------------------------------------------------------------
 
 KEY_CHOICES = [
-    ("Super + Ctrl + Y", "SUPER + CTRL + Y", "SUPER + CTRL + SHIFT + Y"),
+    ("Ctrl + `   (the key left of 1, above Tab: one hand, any layout; takes over VS Code's Ctrl+`)",
+     "CTRL + code:49", "CTRL + SHIFT + code:49"),
     ("Ctrl + <   (keyboards with a < > key next to left Shift: AZERTY, German, UK, ...)",
      "CTRL + less", "CTRL + SHIFT + greater"),
-    ("Super + Ctrl + J", "SUPER + CTRL + J", "SUPER + CTRL + SHIFT + J"),
+    ("Super + Ctrl + Y", "SUPER + CTRL + Y", "SUPER + CTRL + SHIFT + Y"),
 ]
 OTHER_KEY = "Something else (type it)"
 NO_KEY = "No key: I'll bind `tidy run` myself"

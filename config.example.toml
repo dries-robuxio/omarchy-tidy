@@ -16,13 +16,15 @@ backend = "claude"
 # Model for the backend. Empty picks a fast one (claude: haiku).
 model = ""
 
-# Keys, in Hyprland notation. Empty string = no key.
+# Keys, in Hyprland notation. Empty string = no key. `tidy setup` picks them.
 # keys:           select all text in the focused field, tidy it, replace it
 # selection_keys: tidy only the selected text
-# On keyboards with a < > key next to left Shift (ISO, e.g. Belgian, German,
-# UK) "CTRL + less" and "CTRL + SHIFT + greater" are lovely.
-keys = "SUPER + CTRL + Y"
-selection_keys = "SUPER + CTRL + SHIFT + Y"
+# The default, code:49, is the key left of 1 (above Tab) on every layout:
+# Ctrl + ` on QWERTY, Ctrl + ² on AZERTY. One hand, no stretch.
+# With a < > key next to left Shift (ISO: Belgian, German, UK, ...)
+# "CTRL + less" and "CTRL + SHIFT + greater" are just as quick.
+keys = "CTRL + code:49"
+selection_keys = "CTRL + SHIFT + code:49"
 
 # Show "Tidying…" / "Tidied" notifications. Errors always show.
 notify = true
